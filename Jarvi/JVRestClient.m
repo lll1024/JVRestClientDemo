@@ -88,12 +88,20 @@ static NSStringEncoding const kJVRestClientStringEncoding = NSUTF8StringEncoding
 }
 
 - (void)getPath:(NSString *)path parameters:(NSDictionary *)parameters success:(void (^)(id))success {
-    NSURLRequest *request = [self requestWithMethod:@"GET" path:path parameters:parameters];
-    [self enqueueHTTPOperationWithRequest:request success:success failure:nil];
+    [self getPath:path parameters:parameters success:success failure:nil];
 }
 
 - (void)getPath:(NSString *)path parameters:(NSDictionary *)parameters success:(void (^)(id))success failure:(void (^)(NSError *))failure {
     NSURLRequest *request = [self requestWithMethod:@"GET" path:path parameters:parameters];
+    [self enqueueHTTPOperationWithRequest:request success:success failure:failure];
+}
+
+- (void)postPath:(NSString *)path parameters:(NSDictionary *)parameters success:(void (^)(id))success {
+    [self postPath:path parameters:parameters success:success failure:nil];
+}
+
+- (void)postPath:(NSString *)path parameters:(NSDictionary *)parameters success:(void (^)(id))success failure:(void (^)(NSError *))failure {
+    NSURLRequest *request = [self requestWithMethod:@"POST" path:path parameters:parameters];
     [self enqueueHTTPOperationWithRequest:request success:success failure:failure];
 }
 

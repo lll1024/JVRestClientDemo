@@ -10,6 +10,8 @@
 		4758255C1E4EA40D00EA4972 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 4758255B1E4EA40D00EA4972 /* main.m */; };
 		4758255F1E4EA40D00EA4972 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 4758255E1E4EA40D00EA4972 /* AppDelegate.m */; };
 		475825671E4EA40D00EA4972 /* images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 475825661E4EA40D00EA4972 /* images.xcassets */; };
+		478635B71E7400AF00B4286D /* JVJSONRequestOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = 478635B41E7400AF00B4286D /* JVJSONRequestOperation.m */; };
+		478635B81E7400AF00B4286D /* JVSCAPIClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 478635B61E7400AF00B4286D /* JVSCAPIClient.m */; };
 		478950091E71014600618615 /* JVRequestOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = 478950081E71014600618615 /* JVRequestOperation.m */; };
 		478950711E714BCE00618615 /* JVRestClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 478950701E714BCE00618615 /* JVRestClient.m */; };
 /* End PBXBuildFile section */
@@ -22,6 +24,10 @@
 		475825661E4EA40D00EA4972 /* images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = images.xcassets; sourceTree = "<group>"; };
 		4758256B1E4EA40D00EA4972 /* Jarvi-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Jarvi-Info.plist"; sourceTree = "<group>"; };
 		475825711E4EA6DC00EA4972 /* Jarvi-Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "Jarvi-Prefix.pch"; sourceTree = "<group>"; };
+		478635B31E7400AF00B4286D /* JVJSONRequestOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JVJSONRequestOperation.h; sourceTree = "<group>"; };
+		478635B41E7400AF00B4286D /* JVJSONRequestOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = JVJSONRequestOperation.m; sourceTree = "<group>"; };
+		478635B51E7400AF00B4286D /* JVSCAPIClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JVSCAPIClient.h; sourceTree = "<group>"; };
+		478635B61E7400AF00B4286D /* JVSCAPIClient.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = JVSCAPIClient.m; sourceTree = "<group>"; };
 		478950071E71014600618615 /* JVRequestOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JVRequestOperation.h; sourceTree = "<group>"; };
 		478950081E71014600618615 /* JVRequestOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = JVRequestOperation.m; sourceTree = "<group>"; };
 		4789506F1E714BCE00618615 /* JVRestClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JVRestClient.h; sourceTree = "<group>"; };
@@ -61,8 +67,12 @@
 				4758255B1E4EA40D00EA4972 /* main.m */,
 				4758255D1E4EA40D00EA4972 /* AppDelegate.h */,
 				4758255E1E4EA40D00EA4972 /* AppDelegate.m */,
+				478635B31E7400AF00B4286D /* JVJSONRequestOperation.h */,
+				478635B41E7400AF00B4286D /* JVJSONRequestOperation.m */,
 				478950071E71014600618615 /* JVRequestOperation.h */,
 				478950081E71014600618615 /* JVRequestOperation.m */,
+				478635B51E7400AF00B4286D /* JVSCAPIClient.h */,
+				478635B61E7400AF00B4286D /* JVSCAPIClient.m */,
 				4789506F1E714BCE00618615 /* JVRestClient.h */,
 				478950701E714BCE00618615 /* JVRestClient.m */,
 				475825661E4EA40D00EA4972 /* images.xcassets */,
@@ -150,8 +160,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				478635B71E7400AF00B4286D /* JVJSONRequestOperation.m in Sources */,
 				478950091E71014600618615 /* JVRequestOperation.m in Sources */,
 				4758255F1E4EA40D00EA4972 /* AppDelegate.m in Sources */,
+				478635B81E7400AF00B4286D /* JVSCAPIClient.m in Sources */,
 				478950711E714BCE00618615 /* JVRestClient.m in Sources */,
 				4758255C1E4EA40D00EA4972 /* main.m in Sources */,
 			);

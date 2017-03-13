@@ -22,9 +22,13 @@
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
     self.window.backgroundColor = [UIColor whiteColor];
     
-    //http://wthrcdn.etouch.cn/weather_mini?city=%E5%8C%97%E4%BA%AC
-    //http://192.168.0.37/longma/myHtml/text.php
-    [[JVSCAPIClient sharedClient] getPath:@"/longma/test/my_select.php" parameters:nil success:^(id response) {
+    /*[[JVSCAPIClient sharedClient] getPath:@"/weather_mini" parameters:@{@"city":@"北京"} success:^(id response) {
+        NSLog(@"%@", response);
+    } failure:^(NSError *error) {
+        NSLog(@"%@", error);
+    }];*/
+    
+    [[JVSCAPIClient sharedClient] postPath:@"/longma/test/my_select.php" parameters:@{@"userID":@"aaaa"} success:^(id response) {
         NSLog(@"%@", response);
     } failure:^(NSError *error) {
         NSLog(@"%@", error);

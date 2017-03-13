@@ -24,8 +24,8 @@ NSString * const kJVSCBaseURLString = @"http://192.168.0.37";
 
 - (id)init {
     if (self = [super init]) {
-        [self setDefaultHeader:@"Authorization" value:@"longma"];
         
+        //[self setDefaultHeader:@"Authorization" value:@"..."];
         //...
     }
     return self;

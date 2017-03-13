@@ -37,4 +37,13 @@
         success:(void (^)(id response))success
         failure:(void (^)(NSError *error))failure;
 
+- (void)postPath:(NSString *)path
+      parameters:(NSDictionary *)parameters
+         success:(void (^)(id response))success;
+
+- (void)postPath:(NSString *)path
+      parameters:(NSDictionary *)parameters
+         success:(void (^)(id response))success
+         failure:(void (^)(NSError *error))failure;
+
 @end
