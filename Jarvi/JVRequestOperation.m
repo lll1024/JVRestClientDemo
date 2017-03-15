@@ -12,7 +12,8 @@ typedef NS_ENUM(NSInteger, JVRequestOperationState) {
     JVRequestOperationReadyState = 0,
     JVRequestOperationExecutingState,
     JVRequestOperationFinishedState,
-    JVRequestOperationCancelledState
+    JVRequestOperationCancelledState,
+    JVRequestOperationPausedState
 };
 
 NSString * const JVRequestOperationDidStartNotification = @"com.jarvi.http-operation.start";
@@ -24,41 +25,42 @@ static inline NSString * JVKeyPathFromOperationState(JVRequestOperationState sta
     switch (state) {
         case JVRequestOperationReadyState:
             return @"isReady";
-            break;
         case JVRequestOperationExecutingState:
             return @"isExecuting";
-            break;
         case JVRequestOperationFinishedState:
             return @"isFinished";
-            break;
+        case JVRequestOperationPausedState:
+            return @"isPaused";
         default:
             return @"state";
     }
 }
 
-static inline BOOL JVOperationStateTransitionIsValid(JVRequestOperationState from, JVRequestOperationState to) {
-    if (from == to) {
-        return NO;
-    }
-    
-    switch (from) {
+static inline BOOL JVOperationStateTransitionIsValid(JVRequestOperationState fromState, JVRequestOperationState toState, BOOL isCancelled) {
+    switch (fromState) {
         case JVRequestOperationReadyState:
-            switch (to) {
+            switch (toState) {
+                case JVRequestOperationPausedState:
                 case JVRequestOperationExecutingState:
                     return YES;
+                case JVRequestOperationFinishedState:
+                    return isCancelled;
                 default:
                     return NO;
             
             }
         case JVRequestOperationExecutingState:
-            switch (to) {
-                case JVRequestOperationReadyState:
-                    return NO;
-                default:
+            switch (toState) {
+                case JVRequestOperationPausedState:
+                case JVRequestOperationFinishedState:
                     return YES;
+                default:
+                    return NO;
             }
         case JVRequestOperationFinishedState:
             return NO;
+        case JVRequestOperationPausedState:
+            return toState == JVRequestOperationReadyState;
         default:
             return YES;
     }
@@ -68,7 +70,6 @@ static inline BOOL JVOperationStateTransitionIsValid(JVRequestOperationState fro
 
 @property (nonatomic, assign) JVRequestOperationState state;
 @property (nonatomic, assign) BOOL isCancelled;
-@property (nonatomic, strong) NSPort *port;
 @property (nonatomic, strong) NSMutableData *dataAccumulator;
 @property (nonatomic, copy) JVRequestOperationCompletionBlock completion;
 
@@ -76,32 +77,54 @@ static inline BOOL JVOperationStateTransitionIsValid(JVRequestOperationState fro
 
 @implementation JVRequestOperation
 
++ (void) __attribute((noreturn)) networkRequestThreadEntryPoint:(id)__unused object {
+    do {
+        @autoreleasepool {
+            [[NSRunLoop currentRunLoop] run];
+        }
+    } while (YES);
+}
+
++ (NSThread *)shareRequestThread {
+    static NSThread * _requestThread = nil;
+    static dispatch_once_t onceToken;
+    
+    dispatch_once(&onceToken, ^{
+        _requestThread = [[NSThread alloc] initWithTarget:self selector:@selector(networkRequestThreadEntryPoint:) object:nil];
+        [_requestThread start];
+    });
+    
+    return _requestThread;
+}
+
 + (id)operationWithRequest:(NSURLRequest *)request
                 completion:(void (^)(NSURLRequest *, NSHTTPURLResponse *, NSData *, NSError *))completion {
     JVRequestOperation *operation = [[JVRequestOperation alloc] initWithRequest:request];
     operation.completion = completion;
+    
     return operation;
 }
 
 - (id)initWithRequest:(NSURLRequest *)request {
     if (self = [super init]) {
         self.request = request;
-        self.runLoopModes = [NSSet setWithObjects:NSRunLoopCommonModes, nil];
+        self.runLoopModes = [NSSet setWithObject:NSRunLoopCommonModes];
         self.state = JVRequestOperationReadyState;
     }
+    
     return self;
 }
 
 - (void)cleanup {
     for (NSString *runLoopMode in self.runLoopModes) {
-        [[NSRunLoop currentRunLoop] removePort:self.port forMode:runLoopMode];
         [self.connection unscheduleFromRunLoop:[NSRunLoop currentRunLoop] forMode:runLoopMode];
     }
+    
     CFRunLoopStop([[NSRunLoop currentRunLoop] getCFRunLoop]);
 }
 
 - (void)setState:(JVRequestOperationState)state {
-    if (!JVOperationStateTransitionIsValid(self.state, state)) {
+    if (!JVOperationStateTransitionIsValid(self.state, state, [self isCancelled])) {
         return;
     }
     
@@ -116,10 +139,10 @@ static inline BOOL JVOperationStateTransitionIsValid(JVRequestOperationState fro
     
     switch (state) {
         case JVRequestOperationExecutingState:
-            [[NSNotificationCenter defaultCenter] postNotificationName:JVRequestOperationDidStartNotification object:nil];
+            [[NSNotificationCenter defaultCenter] postNotificationName:JVRequestOperationDidStartNotification object:self];
             break;
         case JVRequestOperationFinishedState:
-            [[NSNotificationCenter defaultCenter] postNotificationName:JVRequestOperationDidFinishNotification object:nil];
+            [[NSNotificationCenter defaultCenter] postNotificationName:JVRequestOperationDidFinishNotification object:self];
             break;
         default:
             break;
@@ -128,6 +151,33 @@ static inline BOOL JVOperationStateTransitionIsValid(JVRequestOperationState fro
 
 - (NSString *)responseString {
     return [[NSString alloc] initWithData:self.responseBody encoding:NSUTF8StringEncoding];
+}
+
+- (void)pause {
+    if ([self isPaused] || [self isCancelled] || [self isFinished]) {
+        return;
+    }
+    
+    if ([self isExecuting]) {
+        [self.connection performSelector:@selector(cancel) onThread:[[self class] shareRequestThread] withObject:nil waitUntilDone:NO modes:[self.runLoopModes allObjects]];
+        [[NSNotificationCenter defaultCenter] postNotificationName:JVRequestOperationDidFinishNotification object:self];
+    }
+    
+    self.state = JVRequestOperationPausedState;
+}
+
+- (BOOL)isPaused {
+    return self.state == JVRequestOperationPausedState;
+}
+
+- (void)resume {
+    if (![self isPaused]) {
+        return;
+    }
+    
+    self.state = JVRequestOperationReadyState;
+    
+    [self start];
 }
 
 #pragma mark - NSOperation
@@ -144,38 +194,30 @@ static inline BOOL JVOperationStateTransitionIsValid(JVRequestOperationState fro
     return self.state == JVRequestOperationFinishedState;
 }
 
-- (void)cancel {
-    self.isCancelled = YES;
-    [self.connection cancel];
-    [self cleanup];
-}
-
 - (BOOL)isConcurrent {
     return YES;
 }
 
 - (void)start {
-    if (self.isFinished || self.isCancelled) {
-        return;
+    if ([self isReady]) {
+        self.state = JVRequestOperationExecutingState;
+        [self performSelector:@selector(operationDidStart) onThread:[[self class] shareRequestThread] withObject:nil waitUntilDone:NO modes:[self.runLoopModes allObjects]];
     }
-    
-    self.state = JVRequestOperationExecutingState;
-    
-    self.connection = [[NSURLConnection alloc] initWithRequest:self.request delegate:self startImmediately:NO];
-    self.port = [NSPort port];
-    
-    NSRunLoop *runLoop = [NSRunLoop currentRunLoop];
-    for (NSString *runLoopMode in self.runLoopModes) {
-        [self.connection scheduleInRunLoop:runLoop forMode:runLoopMode];
-        [runLoop addPort:self.port forMode:runLoopMode];
-    }
-    
-    [self.connection start];
-    
-    [runLoop run];
 }
 
-#pragma mark JVRequestOperation
+- (void)operationDidStart {
+    if ([self isCancelled]) {
+        [self finish];
+    } else {
+        self.connection = [[NSURLConnection alloc] initWithRequest:self.request delegate:self startImmediately:NO];
+        NSRunLoop *runLoop = [NSRunLoop currentRunLoop];
+        for (NSString *runLoopMode in self.runLoopModes) {
+            [self.connection scheduleInRunLoop:runLoop forMode:runLoopMode];
+        }
+        
+        [self.connection start];
+    }
+}
 
 - (void)finish {
     if (self.isCancelled) {
@@ -184,6 +226,29 @@ static inline BOOL JVOperationStateTransitionIsValid(JVRequestOperationState fro
     
     if (self.completion) {
         self.completion(self.request, self.response, self.responseBody, self.error);
+    }
+}
+
+- (void)cancel {
+    if (![self isFinished] && ![self isCancelled]) {
+        [self willChangeValueForKey:@"isCancelled"];
+        _isCancelled = YES;
+        [super cancel];
+        [self didChangeValueForKey:@"isCancelled"];
+        
+        [self performSelector:@selector(cancelConnection) onThread:[[self class] shareRequestThread] withObject:nil waitUntilDone:NO modes:[self.runLoopModes allObjects]];
+    }
+}
+
+- (void)cancelConnection {
+    if (self.connection) {
+        [self.connection cancel];
+        
+        NSDictionary *userInfo = nil;
+        if ([self.request URL]) {
+            userInfo = [NSDictionary dictionaryWithObject:[self.request URL] forKey:NSURLErrorFailingURLErrorKey];
+        }
+        [self performSelector:@selector(connection:didFailWithError:) withObject:self.connection withObject:[NSError errorWithDomain:NSURLErrorDomain code:NSURLErrorCancelled userInfo:userInfo]];
     }
 }
 

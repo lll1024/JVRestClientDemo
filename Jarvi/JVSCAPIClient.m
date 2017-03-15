@@ -8,7 +8,7 @@
 
 #import "JVSCAPIClient.h"
 
-NSString * const kJVSCBaseURLString = @"http://192.168.0.37";
+NSString * const kJVSCBaseURLString = @"http://wthrcdn.etouch.cn";
 
 @implementation JVSCAPIClient
 
