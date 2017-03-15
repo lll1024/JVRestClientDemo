@@ -12,8 +12,7 @@ typedef NS_ENUM(NSInteger, JVRequestOperationState) {
     JVRequestOperationReadyState = 0,
     JVRequestOperationExecutingState,
     JVRequestOperationFinishedState,
-    JVRequestOperationCancelledState,
-    JVRequestOperationPausedState
+    JVRequestOperationCancelledState
 };
 
 NSString * const JVRequestOperationDidStartNotification = @"com.jarvi.http-operation.start";
@@ -29,8 +28,6 @@ static inline NSString * JVKeyPathFromOperationState(JVRequestOperationState sta
             return @"isExecuting";
         case JVRequestOperationFinishedState:
             return @"isFinished";
-        case JVRequestOperationPausedState:
-            return @"isPaused";
         default:
             return @"state";
     }
@@ -40,7 +37,6 @@ static inline BOOL JVOperationStateTransitionIsValid(JVRequestOperationState fro
     switch (fromState) {
         case JVRequestOperationReadyState:
             switch (toState) {
-                case JVRequestOperationPausedState:
                 case JVRequestOperationExecutingState:
                     return YES;
                 case JVRequestOperationFinishedState:
@@ -51,7 +47,6 @@ static inline BOOL JVOperationStateTransitionIsValid(JVRequestOperationState fro
             }
         case JVRequestOperationExecutingState:
             switch (toState) {
-                case JVRequestOperationPausedState:
                 case JVRequestOperationFinishedState:
                     return YES;
                 default:
@@ -59,8 +54,6 @@ static inline BOOL JVOperationStateTransitionIsValid(JVRequestOperationState fro
             }
         case JVRequestOperationFinishedState:
             return NO;
-        case JVRequestOperationPausedState:
-            return toState == JVRequestOperationReadyState;
         default:
             return YES;
     }
@@ -151,33 +144,6 @@ static inline BOOL JVOperationStateTransitionIsValid(JVRequestOperationState fro
 
 - (NSString *)responseString {
     return [[NSString alloc] initWithData:self.responseBody encoding:NSUTF8StringEncoding];
-}
-
-- (void)pause {
-    if ([self isPaused] || [self isCancelled] || [self isFinished]) {
-        return;
-    }
-    
-    if ([self isExecuting]) {
-        [self.connection performSelector:@selector(cancel) onThread:[[self class] shareRequestThread] withObject:nil waitUntilDone:NO modes:[self.runLoopModes allObjects]];
-        [[NSNotificationCenter defaultCenter] postNotificationName:JVRequestOperationDidFinishNotification object:self];
-    }
-    
-    self.state = JVRequestOperationPausedState;
-}
-
-- (BOOL)isPaused {
-    return self.state == JVRequestOperationPausedState;
-}
-
-- (void)resume {
-    if (![self isPaused]) {
-        return;
-    }
-    
-    self.state = JVRequestOperationReadyState;
-    
-    [self start];
 }
 
 #pragma mark - NSOperation

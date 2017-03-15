@@ -24,10 +24,4 @@ extern NSString * const JVRequestOperationDidFinishNotification;
 + (id)operationWithRequest:(NSURLRequest *)request
                 completion:(void (^)(NSURLRequest *request, NSHTTPURLResponse *response, NSData *data, NSError *error))completion;
 
-- (void)pause;
-
-- (BOOL)isPaused;
-
-- (void)resume;
-
 @end
